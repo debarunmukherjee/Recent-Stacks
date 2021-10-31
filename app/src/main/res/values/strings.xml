@@ -8,4 +8,5 @@
     <string name="posted_on_text">Posted On:</string>
     <string name="default_post_date">26-09-1997</string>
     <string name="author_image_description">Author Image</string>
+    <string name="demo_ad_description">Demo Ad Image</string>
 </resources>
