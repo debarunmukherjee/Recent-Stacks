@@ -23,9 +23,8 @@ import com.example.recentstacks.utils.NetworkUtils
 import com.example.recentstacks.utils.Resource
 import com.example.recentstacks.viewmodels.QuestionViewModel
 import com.example.recentstacks.viewmodels.QuestionViewModelFactory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import java.util.*
 
 class MainActivity : AppCompatActivity(), QuestionListAdapter.OnItemClickListener {
     lateinit var questionViewModel: QuestionViewModel
@@ -67,6 +66,7 @@ class MainActivity : AppCompatActivity(), QuestionListAdapter.OnItemClickListene
                 }
             }
         })
+        setUpSearch(questionViewModel)
     }
 
     private fun hideProgressBar() {
@@ -155,6 +155,52 @@ class MainActivity : AppCompatActivity(), QuestionListAdapter.OnItemClickListene
                     it1
                 )
             })
+        })
+    }
+
+    private fun setUpSearch(questionViewModel: QuestionViewModel) {
+        val searchBar = findViewById<SearchView>(R.id.svQuestionSearch)
+        var job: Job? = null
+        searchBar.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextChange(newText: String?): Boolean {
+                job?.cancel()
+                job = MainScope().launch {
+                    delay(500L)
+                    val averageStatsContainer = findViewById<ConstraintLayout>(R.id.clAverageStatsContainer)
+                    if (newText != null) {
+                        val allItems = getAllItemsForCurrentFilter(questionViewModel)
+                        val query = newText.toString().lowercase(Locale.getDefault())
+                        if (allItems != null) {
+                            var filteredList = allItems.filter {
+                                it.title.lowercase(Locale.getDefault()).contains(query) ||
+                                        it.owner.display_name.lowercase(Locale.getDefault()).contains(query)
+                            }
+                            if (filteredList.isEmpty()) {
+                                findViewById<TextView>(R.id.tvNoResults).visibility = View.VISIBLE
+                                averageStatsContainer.visibility = View.GONE
+                            } else {
+                                findViewById<TextView>(R.id.tvNoResults).visibility = View.INVISIBLE
+                                if (query.isNotEmpty() || questionViewModel.chosenFilter.value != "All") {
+                                    showAverageStatsView(averageStatsContainer, filteredList)
+                                } else {
+                                    averageStatsContainer.visibility = View.GONE
+                                }
+                            }
+                            if (query.isEmpty()) {
+                                filteredList = questionViewModel.getItemsListWithAds(filteredList)
+                            }
+                            questionAdapter.differ.submitList(filteredList)
+                        }
+                    } else {
+                        averageStatsContainer.visibility = View.GONE
+                    }
+                }
+                return false
+            }
+
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
         })
     }
 }
