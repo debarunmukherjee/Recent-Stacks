@@ -7,11 +7,15 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.widget.SearchView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.recentstacks.models.Item
@@ -19,10 +23,14 @@ import com.example.recentstacks.utils.NetworkUtils
 import com.example.recentstacks.utils.Resource
 import com.example.recentstacks.viewmodels.QuestionViewModel
 import com.example.recentstacks.viewmodels.QuestionViewModelFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), QuestionListAdapter.OnItemClickListener {
     lateinit var questionViewModel: QuestionViewModel
     private lateinit var questionAdapter: QuestionListAdapter
+    lateinit var filterBottomSheet: FilterBottomSheet
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +55,7 @@ class MainActivity : AppCompatActivity(), QuestionListAdapter.OnItemClickListene
                             .show()
                     }
                     setupRecyclerView(questionList)
+                    setUpFilter(questionViewModel)
                 }
                 is Resource.Error -> {
                     hideProgressBar()
@@ -102,5 +111,50 @@ class MainActivity : AppCompatActivity(), QuestionListAdapter.OnItemClickListene
 
         val browserIntent = Intent(Intent.ACTION_VIEW, this)
         ContextCompat.startActivity(context, browserIntent, null)
+    }
+
+    private fun showAverageStatsView(averageStatsContainer: ConstraintLayout, items: List<Item>) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            val averageViewCount = async { questionViewModel.getAverageViewCount(items) }
+            val averageAnswerCount = async { questionViewModel.getAverageAnswerCount(items) }
+            findViewById<TextView>(R.id.tvAverageViewCount).text = "Average View Count: ${averageViewCount.await()}"
+            findViewById<TextView>(R.id.tvAverageAnswerCount).text = "Average Answer Count: ${averageAnswerCount.await()}"
+            averageStatsContainer.visibility = View.VISIBLE
+        }
+    }
+
+    private fun getAllItemsForCurrentFilter(questionViewModel: QuestionViewModel): List<Item>? {
+        val allItems = questionViewModel.questions.value?.data?.items
+        val filter = questionViewModel.chosenFilter.value
+        return if (filter == "All") {
+            allItems
+        } else {
+            allItems?.filter { item -> item.tags.contains(filter) }
+        }
+    }
+
+    private fun setUpFilter(questionViewModel: QuestionViewModel) {
+        filterBottomSheet = FilterBottomSheet(this, questionViewModel)
+        findViewById<ImageButton>(R.id.ibFilterButton).setOnClickListener {
+            filterBottomSheet.apply {
+                show(supportFragmentManager, FilterBottomSheet.TAG)
+            }
+        }
+        questionViewModel.chosenFilter.observe(this, {
+            val searchBar = findViewById<SearchView>(R.id.svQuestionSearch)
+            searchBar.setQuery("", false)
+            val items = getAllItemsForCurrentFilter(questionViewModel)
+            val averageStatsContainer = findViewById<ConstraintLayout>(R.id.clAverageStatsContainer)
+            if (it != "All" && items != null) {
+                showAverageStatsView(averageStatsContainer, items)
+            } else {
+                averageStatsContainer.visibility = View.GONE
+            }
+            questionAdapter.differ.submitList(items?.let { it1 ->
+                questionViewModel.getItemsListWithAds(
+                    it1
+                )
+            })
+        })
     }
 }
