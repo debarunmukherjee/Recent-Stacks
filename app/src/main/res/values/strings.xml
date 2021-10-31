@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Recent Stacks</string>
+    <string name="filter_questions_desc">Filter Questions</string>
+    <string name="no_result_string">No matching results found</string>
 </resources>
