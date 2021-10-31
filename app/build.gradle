@@ -70,4 +70,7 @@ dependencies {
     annotationProcessor "androidx.room:room-compiler:$roomVersion"
     kapt "androidx.room:room-compiler:$roomVersion"
     implementation "androidx.room:room-ktx:$roomVersion"
+
+    // Google Material IO
+    implementation 'com.google.android.material:material:1.4.0'
 }
