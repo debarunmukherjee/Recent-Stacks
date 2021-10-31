@@ -2,4 +2,10 @@
     <string name="app_name">Recent Stacks</string>
     <string name="filter_questions_desc">Filter Questions</string>
     <string name="no_result_string">No matching results found</string>
+    <string name="default_question_title">Question Title</string>
+    <string name="posted_by_text">Posted By</string>
+    <string name="default_user_name">OP Name</string>
+    <string name="posted_on_text">Posted On:</string>
+    <string name="default_post_date">26-09-1997</string>
+    <string name="author_image_description">Author Image</string>
 </resources>
