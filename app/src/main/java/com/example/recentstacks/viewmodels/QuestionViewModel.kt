@@ -49,6 +49,25 @@ class QuestionViewModel(private val repository: QuestionRepository) : ViewModel(
         }
     }
 
+    suspend fun getAverageViewCount(items: List<Item>): Double {
+        val viewCounts = items.map { it.view_count }
+        val averageViewCount = viewCounts.sum().toDouble() / viewCounts.size
+        return averageViewCount.roundToTwoDecimalPlace()
+    }
+
+    suspend fun getAverageAnswerCount(items: List<Item>): Double {
+        val answerCounts = items.map { it.answer_count }
+        val averageAnswerCount = answerCounts.sum().toDouble() / answerCounts.size
+        return averageAnswerCount.roundToTwoDecimalPlace()
+    }
+
+    private fun Double.roundToTwoDecimalPlace(): Double {
+        val df = DecimalFormat("#.##", DecimalFormatSymbols(Locale.ENGLISH)).apply {
+            roundingMode = RoundingMode.HALF_UP
+        }
+        return df.format(this).toDouble()
+    }
+
     fun getItemsListWithAds(itemList: List<Item>): List<Item> {
         val itemListWithAds = mutableListOf<Item>()
         for ((index, item) in itemList.withIndex()) {
